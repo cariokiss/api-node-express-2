@@ -1,8 +1,9 @@
+import NaoEncontrado from '../erros/naoEncontrado.js';
 import autores from '../models/Autor.js';
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 class AutorController {
-  static listarAutores = async (req, res, next) => {
+  static listarAutores = async (_req, res, next) => {
     try {
       const autoresResultado = await autores.find();
 
@@ -21,7 +22,7 @@ class AutorController {
       if (autorResultado !== null) {
         res.status(200).send(autorResultado);
       } else {
-        res.status(400).send({ message: 'Id do Autor não localizado.' });
+        next(new NaoEncontrado('Id do Autor não localizado.'));
       }
     } catch (erro) {
       next(erro);
