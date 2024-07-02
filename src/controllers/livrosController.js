@@ -6,7 +6,9 @@ import RequisicaoIncorreta from '../erros/requisicaoIncorreta.js';
 class LivroController {
   static listarLivros = async (req, res, next) => {
     try {
-      let { limite = 5, pagina = 1 } = req.query;
+      let { limite = 5, pagina = 1, ordenacao = 'titulo:1' } = req.query;
+
+      const [campoOrdenacao, ordem] = ordenacao.split(':');
 
       limite = Number.parseInt(limite);
       pagina = Number.parseInt(pagina);
@@ -14,6 +16,7 @@ class LivroController {
       if (limite > 0 && pagina > 0) {
         const livrosResultado = await livros
           .find()
+          .sort({ [campoOrdenacao]: ordem })
           .skip(limite * (pagina - 1))
           .limit(limite)
           .populate('autor')
