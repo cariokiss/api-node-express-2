@@ -1,5 +1,5 @@
 import NaoEncontrado from '../erros/naoEncontrado.js';
-import { livros } from '../models/index.js';
+import { autores, livros } from '../models/index.js';
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 class LivroController {
@@ -73,29 +73,41 @@ class LivroController {
     }
   };
 
-  static listarLivroPorFiltro = async (req, res) => {
+  static listarLivroPorFiltro = async (req, res, next) => {
     try {
-      const { editora, titulo, minPaginas, maxPaginas } = req.query;
+      const busca = await processaBusca(req.query);
 
-      const busca = {};
-
-      if (editora) busca.editora = editora;
-      if (titulo) busca.titulo = { $regex: titulo, $options: 'i' };
-
-      if (minPaginas || maxPaginas) busca.numeroPaginas = {};
-
-      // gte = maior ou igual que
-      if (minPaginas) busca.numeroPaginas.$gte = minPaginas;
-      // lte = menor ou igual que
-      if (minPaginas & maxPaginas) busca.numeroPaginas.$lte = maxPaginas;
-
-      const livrosResultado = await livros.find(busca);
+      const livrosResultado = await livros.find(busca).populate('autor');
 
       res.status(200).send(livrosResultado);
     } catch (erro) {
-      res.status(500).json({ message: 'Erro interno no servidor' });
+      next(erro);
     }
   };
+}
+
+async function processaBusca(parametros) {
+  const { editora, titulo, minPaginas, maxPaginas, nomeAutor } = parametros;
+
+  const busca = {};
+
+  if (editora) busca.editora = editora;
+  if (titulo) busca.titulo = { $regex: titulo, $options: 'i' };
+
+  if (minPaginas || maxPaginas) busca.numeroPaginas = {};
+
+  // gte = maior ou igual que
+  if (minPaginas) busca.numeroPaginas.$gte = minPaginas;
+  // lte = menor ou igual que
+  if (minPaginas & maxPaginas) busca.numeroPaginas.$lte = maxPaginas;
+
+  if (nomeAutor) {
+    const autor = await autores.findOne({ nome: nomeAutor });
+
+    busca.autor = autor._id;
+  }
+
+  return busca;
 }
 
 export default LivroController;
