@@ -1,13 +1,28 @@
 import NaoEncontrado from '../erros/naoEncontrado.js';
 import { autores, livros } from '../models/index.js';
+import RequisicaoIncorreta from '../erros/requisicaoIncorreta.js';
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 class LivroController {
-  static listarLivros = async (_req, res, next) => {
+  static listarLivros = async (req, res, next) => {
     try {
-      const livrosResultado = await livros.find().populate('autor').exec();
+      let { limite = 5, pagina = 1 } = req.query;
 
-      res.status(200).json(livrosResultado);
+      limite = Number.parseInt(limite);
+      pagina = Number.parseInt(pagina);
+
+      if (limite > 0 && pagina > 0) {
+        const livrosResultado = await livros
+          .find()
+          .skip(limite * (pagina - 1))
+          .limit(limite)
+          .populate('autor')
+          .exec();
+
+        res.status(200).json(livrosResultado);
+      } else {
+        next(new RequisicaoIncorreta());
+      }
     } catch (erro) {
       next(erro);
     }
